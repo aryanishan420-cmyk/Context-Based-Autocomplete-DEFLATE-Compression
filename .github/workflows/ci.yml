@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: make -j"$(nproc)"
+
+      - name: Unit tests
+        run: make test
+
+      # Uses generated input, so it does not depend on the network.
+      - name: Interoperability with system gzip and python zlib
+        run: make interop
+
+      - name: Self-contained end-to-end check
+        run: |
+          # Build a model from the project's own sources and query it, so the
+          # autocomplete path is exercised even without the Gutenberg corpus.
+          cat src/*/*.cpp src/*/*.hpp README.md > /tmp/mini_corpus.txt
+          bin/autocomplete build --corpus /tmp/mini_corpus.txt --out /tmp/mini.bin
+          bin/autocomplete suggest --model /tmp/mini.bin --context "the" --prefix "co" -k 5
+          bin/autocomplete eval --model /tmp/mini.bin --test /tmp/mini_corpus.txt --max-queries 2000
+
+  build-with-clang:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test with clang++
+        run: |
+          make CXX=clang++ -j"$(nproc)"
+          make CXX=clang++ test

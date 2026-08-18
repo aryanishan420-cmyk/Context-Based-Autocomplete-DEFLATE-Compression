@@ -1,0 +1,13 @@
+# Build output
+bin/
+build/
+
+# Downloaded corpus and generated models -- regenerate with `make data`
+data/
+!data/.gitkeep
+
+# Editor and OS noise
+.vscode/
+.idea/
+*.swp
+.DS_Store
